@@ -1,0 +1,52 @@
+# Gradle
+.gradle
+build
+gradle-app.setting
+.gradletasknamecache
+
+# Build outputs
+**/build/
+out/
+target/
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.fleet/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Kotlin
+*.kotlin_module
+*.kotlin_metadata
+
+# Local environment
+local.properties
+.env
+
+# SDKMAN
+.sdkman/
+
+# Signing keys (security)
+*.gpg
+*.asc
+secring.*
+*.keystore
+*.jks
+
+# Agent working directory (detailed docs and caches)
+.agent/
