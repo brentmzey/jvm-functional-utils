@@ -1,4 +1,4 @@
-# JVM Functional Utils
+# JVM Functional Programming Utils
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yourusername/jvm-functional-utils)
 [![Coverage](https://img.shields.io/badge/coverage-98.46%25-brightgreen)](https://github.com/yourusername/jvm-functional-utils)
