@@ -475,3 +475,4 @@ This library follows these principles:
 **Built with ❤️ for functional programmers who want ergonomic monadic composition without heavyweight dependencies.**
 
 [![Star this repo](https://img.shields.io/github/stars/yourusername/jvm-functional-utils?style=social)](https://github.com/yourusername/jvm-functional-utils)
+
