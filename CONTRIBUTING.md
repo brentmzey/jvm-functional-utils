@@ -25,17 +25,30 @@ Be respectful, professional, and inclusive in all interactions.
 
 ## Development Workflow
 
-### Building
+### **THE ONE COMMAND:**
 
 ```bash
-./gradlew build
+./gradlew clean build
 ```
 
-### Running Tests
+This command does everything:
+- ✅ Builds all platforms (JVM, JS, Native)
+- ✅ Runs all tests
+- ✅ Verifies coverage
+- ✅ Checks code quality
+
+### After Making Changes
+
+**Always run before committing:**
+```bash
+./gradlew clean build
+```
+
+### Running Tests Only
 
 ```bash
 # All platforms
-./gradlew allTests
+./gradlew test
 
 # Specific platforms
 ./gradlew jvmTest

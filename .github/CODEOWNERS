@@ -1,0 +1,12 @@
+# Code owners for this repository
+# These owners will be automatically requested for review when PRs are opened
+
+# Default owner for everything
+* @yourusername
+
+# Build configuration
+*.gradle.kts @yourusername
+gradle.properties @yourusername
+
+# CI/CD
+.github/ @yourusername

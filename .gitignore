@@ -8,6 +8,7 @@ gradle-app.setting
 **/build/
 out/
 target/
+bin/
 
 # IDEs
 .idea/
@@ -33,6 +34,7 @@ release.properties
 # Kotlin
 *.kotlin_module
 *.kotlin_metadata
+kotlin-js-store/
 
 # Local environment
 local.properties
