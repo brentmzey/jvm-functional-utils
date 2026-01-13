@@ -194,31 +194,32 @@ signing {
     val signingKeyId = System.getenv("SIGNING_KEY_ID")
     val signingKeyRaw = System.getenv("SIGNING_KEY")
     val signingPassword = System.getenv("SIGNING_PASSWORD")
-    
+
     if (signingKeyId != null && signingKeyRaw != null && signingPassword != null) {
-        // GitHub Secrets removes leading/trailing whitespace and may mangle format
-        // We need to reconstruct proper PGP format
-        val signingKey = if (signingKeyRaw.contains("-----BEGIN")) {
-            // Has PGP markers, just normalize newlines
-            signingKeyRaw.replace("\\s+".toRegex(), "\n").trim()
-        } else {
-            // Missing PGP markers, likely stored without them
-            // Reconstruct: add BEGIN/END markers and proper line breaks
-            val keyBody = signingKeyRaw.trim()
-            """-----BEGIN PGP PRIVATE KEY BLOCK-----
-$keyBody
------END PGP PRIVATE KEY BLOCK-----"""
-        }
+        // Reconstruct the PGP key to ensure it's in the correct multi-line format.
+        // GitHub Actions can mangle newlines or store the key as a single line.
+        val keyBody = signingKeyRaw
+            .replace("-----BEGIN PGP PRIVATE KEY BLOCK-----", "")
+            .replace("-----END PGP PRIVATE KEY BLOCK-----", "")
+            .replace("\\s".toRegex(), "")
         
+        val signingKey = """
+            -----BEGIN PGP PRIVATE KEY BLOCK-----
+            
+            ${keyBody.chunked(64).joinToString("\n")}
+            -----END PGP PRIVATE KEY BLOCK-----
+        """.trimIndent()
+
+        logger.lifecycle("  Reconstructed Signing Key Preview:\n${signingKey.take(120)}...")
+
         try {
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             sign(publishing.publications)
             logger.lifecycle("✓ Signing configured successfully")
         } catch (e: Exception) {
             logger.error("Failed to configure signing: ${e.message}")
-            logger.error("SIGNING_KEY format issue. Try exporting with:")
-            logger.error("  gpg --export-secret-keys --armor YOUR-KEY-ID")
-            logger.error("Then copy the ENTIRE output including BEGIN/END lines")
+            logger.error("The PGP key is likely invalid or malformed even after reconstruction.")
+            logger.error("Please verify the SIGNING_KEY secret. It should be an ASCII-armored PGP private key.")
             throw e
         }
     }
