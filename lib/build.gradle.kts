@@ -23,8 +23,8 @@ logger.lifecycle("  Signing Key ID: ${if (System.getenv("SIGNING_KEY_ID") != nul
 val signingKeyEnv = System.getenv("SIGNING_KEY")
 if (signingKeyEnv != null) {
     val keyPreview = signingKeyEnv.take(50)
-    val isBase64 = !keyPreview.contains("BEGIN PGP")
-    logger.lifecycle("  Signing Key: SET (${signingKeyEnv.length} chars, ${if (isBase64) "base64 encoded" else "ASCII armored"})")
+    val isArmored = keyPreview.contains("BEGIN PGP")
+    logger.lifecycle("  Signing Key: SET (${signingKeyEnv.length} chars, ${if (isArmored) "ASCII armored ✓" else "WARNING: Should be ASCII armored!"})")
 } else {
     logger.lifecycle("  Signing Key: NOT SET")
 }
@@ -184,29 +184,22 @@ publishing {
 
 signing {
     val signingKeyId = System.getenv("SIGNING_KEY_ID")
-    val signingKeyBase64 = System.getenv("SIGNING_KEY")
+    val signingKeyRaw = System.getenv("SIGNING_KEY")
     val signingPassword = System.getenv("SIGNING_PASSWORD")
     
-    if (signingKeyId != null && signingKeyBase64 != null && signingPassword != null) {
-        // Decode base64 key - GitHub Secrets often store it encoded
-        val signingKey = if (signingKeyBase64.contains("BEGIN PGP")) {
-            // Already in ASCII armor format
-            signingKeyBase64
-        } else {
-            // Base64 encoded, need to decode
-            try {
-                String(Base64.getDecoder().decode(signingKeyBase64.replace("\\s".toRegex(), "")))
-            } catch (e: Exception) {
-                logger.error("Failed to decode signing key: ${e.message}")
-                null
-            }
-        }
+    if (signingKeyId != null && signingKeyRaw != null && signingPassword != null) {
+        // The key should be ASCII-armored format (exported with --armor flag)
+        // Remove any whitespace/newlines that might have been added
+        val signingKey = signingKeyRaw.replace("\\s+".toRegex(), "\n").trim()
         
-        if (signingKey != null) {
+        try {
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             sign(publishing.publications)
-        } else {
-            logger.warn("Signing key could not be processed")
+        } catch (e: Exception) {
+            logger.error("Failed to configure signing: ${e.message}")
+            logger.error("Make sure SIGNING_KEY is ASCII-armored format:")
+            logger.error("  gpg --export-secret-keys --armor YOUR-KEY-ID | tr -d '\\n'")
+            throw e
         }
     }
 }
