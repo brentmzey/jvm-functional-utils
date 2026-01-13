@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
     kotlin("multiplatform") version "2.1.0"
     id("maven-publish")
@@ -17,7 +19,16 @@ logger.lifecycle("  Version: $version")
 logger.lifecycle("  Maven Central Username: ${if (System.getenv("MAVEN_CENTRAL_USERNAME") != null) "SET" else "NOT SET"}")
 logger.lifecycle("  Maven Central Token: ${if (System.getenv("MAVEN_CENTRAL_TOKEN") != null) "SET" else "NOT SET"}")
 logger.lifecycle("  Signing Key ID: ${if (System.getenv("SIGNING_KEY_ID") != null) "SET" else "NOT SET"}")
-logger.lifecycle("  Signing Key: ${if (System.getenv("SIGNING_KEY") != null) "SET (${System.getenv("SIGNING_KEY")?.length} chars)" else "NOT SET"}")
+
+val signingKeyEnv = System.getenv("SIGNING_KEY")
+if (signingKeyEnv != null) {
+    val keyPreview = signingKeyEnv.take(50)
+    val isBase64 = !keyPreview.contains("BEGIN PGP")
+    logger.lifecycle("  Signing Key: SET (${signingKeyEnv.length} chars, ${if (isBase64) "base64 encoded" else "ASCII armored"})")
+} else {
+    logger.lifecycle("  Signing Key: NOT SET")
+}
+
 logger.lifecycle("  Signing Password: ${if (System.getenv("SIGNING_PASSWORD") != null) "SET" else "NOT SET"}")
 
 repositories {
@@ -173,12 +184,30 @@ publishing {
 
 signing {
     val signingKeyId = System.getenv("SIGNING_KEY_ID")
-    val signingKey = System.getenv("SIGNING_KEY")
+    val signingKeyBase64 = System.getenv("SIGNING_KEY")
     val signingPassword = System.getenv("SIGNING_PASSWORD")
     
-    if (signingKeyId != null && signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-        sign(publishing.publications)
+    if (signingKeyId != null && signingKeyBase64 != null && signingPassword != null) {
+        // Decode base64 key - GitHub Secrets often store it encoded
+        val signingKey = if (signingKeyBase64.contains("BEGIN PGP")) {
+            // Already in ASCII armor format
+            signingKeyBase64
+        } else {
+            // Base64 encoded, need to decode
+            try {
+                String(Base64.getDecoder().decode(signingKeyBase64.replace("\\s".toRegex(), "")))
+            } catch (e: Exception) {
+                logger.error("Failed to decode signing key: ${e.message}")
+                null
+            }
+        }
+        
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            sign(publishing.publications)
+        } else {
+            logger.warn("Signing key could not be processed")
+        }
     }
 }
 
