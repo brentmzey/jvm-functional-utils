@@ -23,8 +23,16 @@ logger.lifecycle("  Signing Key ID: ${if (System.getenv("SIGNING_KEY_ID") != nul
 val signingKeyEnv = System.getenv("SIGNING_KEY")
 if (signingKeyEnv != null) {
     val keyPreview = signingKeyEnv.take(50)
-    val isArmored = keyPreview.contains("BEGIN PGP")
-    logger.lifecycle("  Signing Key: SET (${signingKeyEnv.length} chars, ${if (isArmored) "ASCII armored ✓" else "WARNING: Should be ASCII armored!"})")
+    val hasBeginMarker = keyPreview.contains("-----BEGIN")
+    val hasBeginPGP = keyPreview.contains("BEGIN PGP")
+    logger.lifecycle("  Signing Key: SET (${signingKeyEnv.length} chars)")
+    logger.lifecycle("    Preview: ${keyPreview.take(40)}...")
+    logger.lifecycle("    Has BEGIN marker: $hasBeginMarker")
+    if (hasBeginPGP) {
+        logger.lifecycle("    Format: ASCII armored ✓")
+    } else {
+        logger.lifecycle("    Format: Will add PGP markers")
+    }
 } else {
     logger.lifecycle("  Signing Key: NOT SET")
 }
@@ -188,17 +196,29 @@ signing {
     val signingPassword = System.getenv("SIGNING_PASSWORD")
     
     if (signingKeyId != null && signingKeyRaw != null && signingPassword != null) {
-        // The key should be ASCII-armored format (exported with --armor flag)
-        // Remove any whitespace/newlines that might have been added
-        val signingKey = signingKeyRaw.replace("\\s+".toRegex(), "\n").trim()
+        // GitHub Secrets removes leading/trailing whitespace and may mangle format
+        // We need to reconstruct proper PGP format
+        val signingKey = if (signingKeyRaw.contains("-----BEGIN")) {
+            // Has PGP markers, just normalize newlines
+            signingKeyRaw.replace("\\s+".toRegex(), "\n").trim()
+        } else {
+            // Missing PGP markers, likely stored without them
+            // Reconstruct: add BEGIN/END markers and proper line breaks
+            val keyBody = signingKeyRaw.trim()
+            """-----BEGIN PGP PRIVATE KEY BLOCK-----
+$keyBody
+-----END PGP PRIVATE KEY BLOCK-----"""
+        }
         
         try {
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             sign(publishing.publications)
+            logger.lifecycle("✓ Signing configured successfully")
         } catch (e: Exception) {
             logger.error("Failed to configure signing: ${e.message}")
-            logger.error("Make sure SIGNING_KEY is ASCII-armored format:")
-            logger.error("  gpg --export-secret-keys --armor YOUR-KEY-ID | tr -d '\\n'")
+            logger.error("SIGNING_KEY format issue. Try exporting with:")
+            logger.error("  gpg --export-secret-keys --armor YOUR-KEY-ID")
+            logger.error("Then copy the ENTIRE output including BEGIN/END lines")
             throw e
         }
     }
