@@ -1,4 +1,4 @@
-package io.github.functional;
+package com.brentzey.functional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

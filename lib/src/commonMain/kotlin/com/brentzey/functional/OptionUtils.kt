@@ -1,4 +1,4 @@
-package io.github.functional
+package com.brentzey.functional
 
 /**
  * Functional utilities for working with nullable values in a type-safe manner.

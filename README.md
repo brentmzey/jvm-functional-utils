@@ -38,28 +38,77 @@ Java's `Optional` was designed as a return type for "no value," but lacks the co
 
 ### Installation
 
-#### Gradle (Kotlin DSL)
+[![Maven Central](https://img.shields.io/maven-central/v/com.brentzey.functional/jvm-functional-utils)](https://central.sonatype.com/artifact/com.brentzey.functional/jvm-functional-utils)
+
+This library is published to **Maven Central** under the `com.brentzey.functional` namespace.
+
+#### For Kotlin Multiplatform Projects (Recommended)
 ```kotlin
-dependencies {
-    implementation("io.github.yourusername:jvm-functional-utils:1.0.0")
+// build.gradle.kts
+kotlin {
+    jvm()
+    js(IR) { browser(); nodejs() }
+    linuxX64()
+    macosArm64()
+    // ... other targets
+    
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                // Single dependency - Gradle auto-resolves platform artifacts
+                implementation("com.brentzey.functional:jvm-functional-utils:1.0.0")
+            }
+        }
+    }
 }
 ```
 
-#### Gradle (Groovy)
+#### For JVM/Android Projects
+```kotlin
+// Gradle Kotlin DSL
+dependencies {
+    implementation("com.brentzey.functional:jvm-functional-utils-jvm:1.0.0")
+}
+```
+
 ```groovy
+// Gradle Groovy
 dependencies {
-    implementation 'io.github.yourusername:jvm-functional-utils:1.0.0'
+    implementation 'com.brentzey.functional:jvm-functional-utils-jvm:1.0.0'
 }
 ```
 
-#### Maven
 ```xml
+<!-- Maven -->
 <dependency>
-    <groupId>io.github.yourusername</groupId>
+    <groupId>com.brentzey.functional</groupId>
     <artifactId>jvm-functional-utils-jvm</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
+
+#### For JavaScript/Node.js Projects
+```kotlin
+dependencies {
+    implementation("com.brentzey.functional:jvm-functional-utils-js:1.0.0")
+}
+```
+
+### Available Platform Artifacts
+
+All artifacts are published to Maven Central:
+
+| Platform | Artifact ID | Use Case |
+|----------|-------------|----------|
+| **Multiplatform Root** | `jvm-functional-utils` | KMP projects (auto-resolves platforms) |
+| **JVM/Android** | `jvm-functional-utils-jvm` | JVM/Android applications |
+| **JavaScript** | `jvm-functional-utils-js` | JavaScript/Node.js applications |
+| **Linux Native** | `jvm-functional-utils-linuxX64` | Linux native applications |
+| **macOS Intel** | `jvm-functional-utils-macosX64` | macOS x64 native applications |
+| **macOS ARM** | `jvm-functional-utils-macosArm64` | Apple Silicon (M1/M2/M3) applications |
+| **Windows** | `jvm-functional-utils-mingwX64` | Windows native applications |
+
+**Browse on Maven Central:** https://central.sonatype.com/artifact/com.brentzey.functional/jvm-functional-utils
 
 ---
 
@@ -70,7 +119,7 @@ dependencies {
 Avoid the "pyramid of doom" when combining multiple `Optional` values:
 
 ```java
-import io.github.functional.OptionalUtils;
+import com.brentzey.functional.OptionalUtils;
 import java.util.Optional;
 
 // ❌ Before: Nested flatMaps
@@ -102,7 +151,7 @@ Optional<User> result = OptionalUtils.zip(
 Stop swallowing exceptions with `Optional`. Use `IO` for networking and side effects:
 
 ```java
-import io.github.functional.JavaIO;
+import com.brentzey.functional.JavaIO;
 
 // Define lazy operations (nothing executes yet)
 JavaIO<String> fetchToken = JavaIO.of(() -> authService.getToken());
@@ -136,7 +185,7 @@ if (result.isSuccess()) {
 ### 3. **OptionUtils** - Kotlin Nullable Composition
 
 ```kotlin
-import io.github.functional.OptionUtils
+import com.brentzey.functional.OptionUtils
 
 // Combine nullable values
 val fullName: String? = OptionUtils.zip(
@@ -160,7 +209,7 @@ val message = OptionUtils.fold(
 ### 4. **IO** - Kotlin Multiplatform Lazy Effects
 
 ```kotlin
-import io.github.functional.IO
+import com.brentzey.functional.IO
 
 // Define lazy computation
 val fetchToken = IO.of { authService.getToken() }
@@ -381,11 +430,11 @@ jvm-functional-utils/
 ├── lib/                              # Main library module
 │   ├── src/
 │   │   ├── commonMain/kotlin/       # Kotlin multiplatform code
-│   │   │   └── io/github/functional/
+│   │   │   └── com/brentzey/functional/
 │   │   │       ├── OptionUtils.kt   # Nullable composition
 │   │   │       └── IO.kt            # IO monad (multiplatform)
 │   │   ├── jvmMain/java/           # Java code
-│   │   │   └── io/github/functional/
+│   │   │   └── com/brentzey/functional/
 │   │   │       ├── OptionalUtils.java  # Optional composition
 │   │   │       └── JavaIO.java         # IO monad (Java)
 │   │   ├── commonTest/kotlin/      # Kotlin tests (run on all platforms)

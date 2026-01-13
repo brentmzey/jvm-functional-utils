@@ -1,25 +1,16 @@
 # Maven Central Publishing Guide
 
-This document provides instructions for publishing `jvm-functional-utils` to Maven Central.
+This document provides instructions for publishing `jvm-functional-utils` to Maven Central using the **com.brentzey** namespace.
 
 ## Prerequisites
 
-Before you can publish to Maven Central, you need to complete the following one-time setup:
+### 1. Sonatype Central Portal Account
 
-### 1. Create a Sonatype OSSRH Account
+✅ **COMPLETED** - Your `com.brentzey` namespace is already verified on Sonatype Maven Central.
 
-1. Create a JIRA account at https://issues.sonatype.org/
-2. Create a new ticket requesting a namespace:
-   - **Project**: Community Support - Open Source Project Repository Hosting (OSSRH)
-   - **Issue Type**: New Project
-   - **Summary**: Request for io.github.YOURUSERNAME namespace
-   - **Group Id**: `io.github.YOURUSERNAME`
-   - **Project URL**: https://github.com/YOURUSERNAME/jvm-functional-utils
-   - **SCM URL**: https://github.com/YOURUSERNAME/jvm-functional-utils.git
-3. Wait for approval (usually within 2 business days)
-4. Verify ownership of your GitHub account as instructed in the ticket
+You can manage your publications at: https://central.sonatype.com/
 
-### 2. Generate GPG Keys for Signing
+### 2. GPG Keys for Signing
 
 Maven Central requires all artifacts to be signed with GPG.
 
@@ -58,75 +49,70 @@ gpg --list-secret-keys --keyid-format SHORT
 Add the following secrets to your GitHub repository:
 (Settings → Secrets and variables → Actions → New repository secret)
 
-1. **OSSRH_USERNAME**: Your Sonatype JIRA username
-2. **OSSRH_PASSWORD**: Your Sonatype JIRA password  
+1. **MAVEN_CENTRAL_USERNAME**: Your Sonatype Central Portal username
+2. **MAVEN_CENTRAL_TOKEN**: Your Sonatype Central Portal token (generate at https://central.sonatype.com/account)
 3. **SIGNING_KEY_ID**: Your GPG key ID (last 8 characters)
 4. **SIGNING_KEY**: Your base64-encoded GPG private key (from private-key.txt)
 5. **SIGNING_PASSWORD**: The passphrase for your GPG key
 
 ⚠️ **Security**: Never commit these values to your repository!
 
-### 4. Update build.gradle.kts
+## Project Configuration
 
-Before publishing, update these fields in `lib/build.gradle.kts`:
+The project is configured with:
+- **Group ID**: `com.brentzey.functional`
+- **Artifact ID**: `jvm-functional-utils`
+- **Package**: `com.brentzey.functional`
 
-```kotlin
-group = "io.github.YOURUSERNAME"  // Replace with your actual GitHub username
-version = "1.0.0"  // Remove -SNAPSHOT for releases
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            pom {
-                name.set("JVM Functional Utils")
-                description.set("Functional programming utilities for the JVM")
-                url.set("https://github.com/YOURUSERNAME/jvm-functional-utils")
-                
-                developers {
-                    developer {
-                        id.set("YOURUSERNAME")
-                        name.set("Your Name")
-                        email.set("your.email@example.com")
-                    }
-                }
-                
-                scm {
-                    connection.set("scm:git:git://github.com/YOURUSERNAME/jvm-functional-utils.git")
-                    developerConnection.set("scm:git:ssh://github.com/YOURUSERNAME/jvm-functional-utils.git")
-                    url.set("https://github.com/YOURUSERNAME/jvm-functional-utils")
-                }
-            }
-        }
-    }
-}
-```
+All source files use the correct package structure matching the Maven Central namespace.
 
 ## Publishing Process
 
 ### Automatic Publishing (Recommended)
 
-The project is configured with GitHub Actions to automatically publish releases:
+The project uses GitHub Actions for automated publishing:
 
-1. **Update the version** in `lib/build.gradle.kts` (remove `-SNAPSHOT`)
-2. **Commit and push** your changes
+#### For Release Versions:
+
+1. **Update the version** in `lib/build.gradle.kts` (remove `-SNAPSHOT`):
+   ```kotlin
+   version = "1.0.0"  // No -SNAPSHOT suffix
+   ```
+
+2. **Commit and push** your changes:
+   ```bash
+   git add lib/build.gradle.kts
+   git commit -m "Release version 1.0.0"
+   git push origin main
+   ```
+
 3. **Create and push a release tag**:
    ```bash
    git tag -a v1.0.0 -m "Release version 1.0.0"
    git push origin v1.0.0
    ```
-4. GitHub Actions will automatically:
-   - Build the project
-   - Run all tests
-   - Sign the artifacts
-   - Publish to Maven Central staging
-5. **Release the staging repository**:
-   - Go to https://s01.oss.sonatype.org/
-   - Log in with your OSSRH credentials
-   - Click "Staging Repositories"
-   - Find your repository (io.github.YOURUSERNAME)
-   - Click "Close" and wait for validation
-   - Click "Release" to publish to Maven Central
-   - Artifacts will be available on Maven Central within 2 hours
+
+4. **Monitor the release**:
+   - Go to GitHub Actions tab
+   - Watch the "Release to Maven Central" workflow
+   - It will automatically:
+     - Build the project
+     - Run all tests
+     - Sign the artifacts
+     - Publish to Maven Central
+     - Create a GitHub Release
+
+5. **Verify publication**:
+   - Check https://central.sonatype.com/ (may take 15-30 minutes)
+   - Artifacts will sync to Maven Central within 2 hours
+   - Search at: https://search.maven.org/search?q=g:com.brentzey.functional
+
+#### For Snapshot Versions:
+
+Snapshots are automatically published on every push to `main` branch:
+- Keep `-SNAPSHOT` suffix in version
+- Push to main branch
+- CI/CD pipeline publishes automatically
 
 ### Manual Publishing
 
@@ -134,27 +120,29 @@ If you prefer to publish manually:
 
 ```bash
 # Make sure all secrets are set as environment variables
-export OSSRH_USERNAME=your-username
-export OSSRH_PASSWORD=your-password
+export MAVEN_CENTRAL_USERNAME=your-username
+export MAVEN_CENTRAL_TOKEN=your-token
 export SIGNING_KEY_ID=your-key-id
 export SIGNING_KEY=your-base64-key
 export SIGNING_PASSWORD=your-passphrase
 
 # Build and publish
-./gradlew clean build publishAllPublicationsToOSSRHRepository
+./gradlew clean build publishAllPublicationsToCentralPortalRepository
 ```
-
-Then follow step 5 above to release from the staging repository.
 
 ## Verification
 
-After publishing, you can verify your artifact is available:
+After publishing, verify your artifact is available:
 
-1. **Maven Central Search**: https://search.maven.org/
-   - Search for: `g:io.github.YOURUSERNAME a:jvm-functional-utils`
-2. **Direct URL**: https://repo1.maven.org/maven2/io/github/YOURUSERNAME/jvm-functional-utils/
+1. **Sonatype Central Portal**: https://central.sonatype.com/
+   - Search for: `com.brentzey.functional`
+   
+2. **Maven Central Search**: https://search.maven.org/
+   - Search for: `g:com.brentzey.functional a:jvm-functional-utils`
+   
+3. **Direct URL**: https://repo1.maven.org/maven2/com/brentzey/functional/jvm-functional-utils/
 
-Note: It can take up to 2 hours for artifacts to appear on Maven Central after release.
+Note: It can take up to 2 hours for artifacts to appear on Maven Central after publication.
 
 ## Using Your Published Library
 
@@ -163,21 +151,21 @@ Once published, users can add your library as a dependency:
 ### Gradle (Kotlin DSL)
 ```kotlin
 dependencies {
-    implementation("io.github.YOURUSERNAME:jvm-functional-utils:1.0.0")
+    implementation("com.brentzey.functional:jvm-functional-utils:1.0.0")
 }
 ```
 
 ### Gradle (Groovy)
 ```groovy
 dependencies {
-    implementation 'io.github.YOURUSERNAME:jvm-functional-utils:1.0.0'
+    implementation 'com.brentzey.functional:jvm-functional-utils:1.0.0'
 }
 ```
 
 ### Maven
 ```xml
 <dependency>
-    <groupId>io.github.YOURUSERNAME</groupId>
+    <groupId>com.brentzey.functional</groupId>
     <artifactId>jvm-functional-utils-jvm</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -188,42 +176,38 @@ dependencies {
 For snapshot releases (versions ending in `-SNAPSHOT`):
 
 1. Snapshots are published automatically on every push to main
-2. Available at: https://s01.oss.sonatype.org/content/repositories/snapshots/
-3. Users need to add the snapshot repository:
-
-```kotlin
-repositories {
-    mavenCentral()
-    maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-    }
-}
-```
+2. Available at: https://central.sonatype.com/ (Sonatype's snapshot repository)
+3. Note: The new Sonatype Central Portal handles snapshots differently than the legacy OSSRH system
 
 ## Troubleshooting
 
 ### Build Fails with "401 Unauthorized"
-- Check that your OSSRH_USERNAME and OSSRH_PASSWORD are correct
-- Verify you're using your Sonatype JIRA credentials, not GitHub credentials
+- Check that MAVEN_CENTRAL_USERNAME and MAVEN_CENTRAL_TOKEN are correct
+- Verify you're using credentials from https://central.sonatype.com/account (not legacy OSSRH)
+- Regenerate your token if needed
 
 ### Build Fails with Signing Errors
 - Verify your GPG key is correctly base64-encoded
 - Check that SIGNING_PASSWORD matches your GPG key passphrase
 - Ensure SIGNING_KEY_ID is the correct 8-character ID
 
-### "Group ID not allowed"
-- Make sure you've completed the Sonatype JIRA ticket process
-- Verify the group ID in build.gradle.kts matches your approved namespace
+### "Namespace not verified" or "Group ID not allowed"
+- Verify `com.brentzey` namespace is verified at https://central.sonatype.com/
+- Ensure group ID in build.gradle.kts is `com.brentzey.functional`
 
 ### Artifacts Not Appearing on Maven Central
-- Check that you've "Released" the staging repository in Sonatype
-- Wait up to 2 hours for synchronization
+- Check publication status at https://central.sonatype.com/
+- Wait up to 2 hours for synchronization to Maven Central
 - Verify on https://search.maven.org/
+
+### Version Mismatch Error in GitHub Actions
+- Ensure the version in `lib/build.gradle.kts` matches the git tag
+- Example: If tag is `v1.0.0`, version should be `1.0.0` (no -SNAPSHOT)
 
 ## Resources
 
-- [Sonatype OSSRH Guide](https://central.sonatype.org/publish/publish-guide/)
-- [Publishing with Gradle](https://central.sonatype.org/publish/publish-gradle/)
+- [Sonatype Central Portal](https://central.sonatype.com/)
+- [Central Portal Publishing Guide](https://central.sonatype.org/publish/publish-portal-gradle/)
 - [GPG Signing Guide](https://central.sonatype.org/publish/requirements/gpg/)
 - [GitHub Actions Publishing](https://docs.github.com/en/actions/publishing-packages/publishing-java-packages-with-gradle)
 

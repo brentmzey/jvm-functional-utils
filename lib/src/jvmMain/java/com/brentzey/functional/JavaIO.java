@@ -1,4 +1,4 @@
-package io.github.functional;
+package com.brentzey.functional;
 
 import java.util.function.Function;
 import java.util.Optional;

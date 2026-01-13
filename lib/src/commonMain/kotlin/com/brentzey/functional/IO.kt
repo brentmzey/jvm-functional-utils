@@ -1,4 +1,4 @@
-package io.github.functional
+package com.brentzey.functional
 
 /**
  * IO Monad for lazy, composable side effects.

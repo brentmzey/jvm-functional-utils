@@ -1,4 +1,4 @@
-package io.github.jvmfunctionalutils
+package com.brentzey.functional
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

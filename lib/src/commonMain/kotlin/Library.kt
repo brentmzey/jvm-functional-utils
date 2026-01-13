@@ -1,11 +1,9 @@
-package io.github.jvmfunctionalutils
+package com.brentzey.functional
 
 /**
- * A simple functional utility example that works across all platforms.
+ * Simple greeting function
  */
-fun greet(name: String): String {
-    return "Hello, $name!"
-}
+fun greet(name: String): String = "Hello, $name!"
 
 /**
  * Functional composition utility - compose two functions

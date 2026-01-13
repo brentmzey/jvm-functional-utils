@@ -1,4 +1,4 @@
-package io.github.jvmfunctionalutils
+package com.brentzey.functional
 
 /**
  * JVM-specific functional utilities with Java interoperability

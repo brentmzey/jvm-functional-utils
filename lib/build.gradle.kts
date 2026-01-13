@@ -7,7 +7,7 @@ plugins {
     id("org.graalvm.buildtools.native") version "0.10.3"
 }
 
-group = "io.github.yourusername"
+group = "com.brentzey.functional"
 version = "1.0.0-SNAPSHOT"
 
 repositories {
@@ -124,10 +124,17 @@ afterEvaluate {
 publishing {
     publications {
         withType<MavenPublication> {
+            artifactId = when (name) {
+                "kotlinMultiplatform" -> "jvm-functional-utils"
+                "jvm" -> "jvm-functional-utils-jvm"
+                "js" -> "jvm-functional-utils-js"
+                else -> "jvm-functional-utils-$name"
+            }
+            
             pom {
                 name.set("JVM Functional Utils")
                 description.set("Functional programming utilities for the JVM")
-                url.set("https://github.com/yourusername/jvm-functional-utils")
+                url.set("https://github.com/brentmzey/jvm-functional-utils")
                 
                 licenses {
                     license {
@@ -138,16 +145,16 @@ publishing {
                 
                 developers {
                     developer {
-                        id.set("yourusername")
-                        name.set("Your Name")
-                        email.set("your.email@example.com")
+                        id.set("brentmzey")
+                        name.set("Brent Zey")
+                        email.set("brentmzey@users.noreply.github.com")
                     }
                 }
                 
                 scm {
-                    connection.set("scm:git:git://github.com/yourusername/jvm-functional-utils.git")
-                    developerConnection.set("scm:git:ssh://github.com/yourusername/jvm-functional-utils.git")
-                    url.set("https://github.com/yourusername/jvm-functional-utils")
+                    connection.set("scm:git:git://github.com/brentmzey/jvm-functional-utils.git")
+                    developerConnection.set("scm:git:ssh://github.com/brentmzey/jvm-functional-utils.git")
+                    url.set("https://github.com/brentmzey/jvm-functional-utils")
                 }
             }
         }
@@ -155,13 +162,11 @@ publishing {
     
     repositories {
         maven {
-            name = "OSSRH"
-            val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+            name = "CentralPortal"
+            url = uri("https://central.sonatype.com/api/v1/publisher")
             credentials {
-                username = System.getenv("OSSRH_USERNAME")
-                password = System.getenv("OSSRH_PASSWORD")
+                username = System.getenv("MAVEN_CENTRAL_USERNAME") ?: project.findProperty("mavenCentralUsername") as String?
+                password = System.getenv("MAVEN_CENTRAL_TOKEN") ?: project.findProperty("mavenCentralToken") as String?
             }
         }
     }

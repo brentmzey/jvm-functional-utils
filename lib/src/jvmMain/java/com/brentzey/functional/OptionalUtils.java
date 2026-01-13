@@ -1,7 +1,12 @@
-package io.github.functional;
+package com.brentzey.functional;
 
-import java.util.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class OptionalUtils {
 
@@ -17,8 +22,8 @@ public class OptionalUtils {
      * Combines three Optionals.
      */
     public static <A, B, C, R> Optional<R> zip(Optional<A> oa, Optional<B> ob, Optional<C> oc, TriFunction<A, B, C, R> combiner) {
-        return oa.flatMap(a -> 
-               ob.flatMap(b -> 
+        return oa.flatMap(a ->
+               ob.flatMap(b ->
                oc.map(c -> combiner.apply(a, b, c))));
     }
 
