@@ -200,45 +200,45 @@ signing {
     if (signingKeyId != null && signingKeyRaw != null && signingPassword != null) {
         logger.lifecycle("  Processing Signing Key...")
         
-        try {
-            // Detect if key is base64-encoded or ASCII armored
-            val signingKey = if (signingKeyRaw.contains("BEGIN PGP")) {
-                logger.lifecycle("  Key format: ASCII armored")
-                signingKeyRaw
-            } else {
-                logger.lifecycle("  Key format: Base64 encoded, decoding...")
-                try {
-                    String(Base64.getDecoder().decode(signingKeyRaw))
-                } catch (e: Exception) {
-                    logger.error("  Failed to decode base64, using as-is")
-                    signingKeyRaw
-                }
+        // Detect if key is base64-encoded or ASCII armored
+        val signingKey = if (signingKeyRaw.contains("BEGIN PGP")) {
+            logger.lifecycle("  Key format: ASCII armored")
+            signingKeyRaw
+        } else {
+            logger.lifecycle("  Key format: Base64 encoded, decoding...")
+            val decoded = String(Base64.getDecoder().decode(signingKeyRaw))
+            if (!decoded.contains("BEGIN PGP")) {
+                logger.error("  ERROR: Decoded key doesn't contain PGP markers!")
+                logger.error("  Original key preview: ${signingKeyRaw.take(50)}")
+                throw IllegalArgumentException("SIGNING_KEY is not valid - must be base64 encoded PGP key or ASCII armored")
             }
-            
-            // Use in-memory keys - this works in CI without TTY
+            logger.lifecycle("  Decoded key successfully, found PGP markers")
+            decoded
+        }
+        
+        // Try with key ID first
+        try {
             useInMemoryPgpKeys(signingKeyId.trim(), signingKey, signingPassword.trim())
             sign(publishing.publications)
-            logger.lifecycle("✓ Signing configured successfully")
+            logger.lifecycle("✓ Signing configured successfully with key ID")
         } catch (e: Exception) {
-            logger.error("Failed to configure signing: ${e.message}")
+            logger.error("Failed with key ID: ${e.message}")
             logger.lifecycle("  Trying without key ID (auto-detect)...")
             
-            // Last resort: let Gradle auto-detect the key ID
+            // Fallback: let Gradle auto-detect the key ID
             try {
-                val signingKey = if (signingKeyRaw.contains("BEGIN PGP")) {
-                    signingKeyRaw
-                } else {
-                    String(Base64.getDecoder().decode(signingKeyRaw))
-                }
                 useInMemoryPgpKeys(signingKey, signingPassword.trim())
                 sign(publishing.publications)
                 logger.lifecycle("✓ Signing configured with auto-detected key ID")
             } catch (e2: Exception) {
-                logger.error("All signing methods failed: ${e2.message}")
-                logger.error("Please ensure:")
-                logger.error("  1. SIGNING_KEY is either ASCII armored or base64 encoded")
-                logger.error("  2. SIGNING_KEY_ID matches the key (or remove it)")
-                logger.error("  3. SIGNING_PASSWORD is correct")
+                logger.error("All signing methods failed!")
+                logger.error("  With key ID: ${e.message}")
+                logger.error("  Auto-detect: ${e2.message}")
+                logger.error("")
+                logger.error("Troubleshooting:")
+                logger.error("  1. Verify SIGNING_KEY is base64 encoded: base64 -i private-key.asc")
+                logger.error("  2. Verify SIGNING_KEY_ID matches: gpg --list-packets private-key.asc | grep keyid")
+                logger.error("  3. Verify SIGNING_PASSWORD is correct")
                 throw e2
             }
         }
