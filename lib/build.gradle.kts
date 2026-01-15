@@ -200,62 +200,47 @@ signing {
     if (signingKeyId != null && signingKeyRaw != null && signingPassword != null) {
         logger.lifecycle("  Processing Signing Key...")
         
-        // Write key to a temporary file - this is much more reliable than in-memory keys
-        val keyFile = File.createTempFile("pgp-key-", ".asc")
-        keyFile.deleteOnExit()
-        
         try {
-            // Write the key exactly as provided (preserve formatting)
-            keyFile.writeText(signingKeyRaw)
-            
-            // Import the key using command-line GPG (more robust than Gradle's parser)
-            val importCmd = if (System.getProperty("os.name").lowercase().contains("win")) {
-                arrayOf("cmd", "/c", "gpg", "--batch", "--import", keyFile.absolutePath)
+            // Detect if key is base64-encoded or ASCII armored
+            val signingKey = if (signingKeyRaw.contains("BEGIN PGP")) {
+                logger.lifecycle("  Key format: ASCII armored")
+                signingKeyRaw
             } else {
-                arrayOf("gpg", "--batch", "--import", keyFile.absolutePath)
-            }
-            
-            val importResult = Runtime.getRuntime().exec(importCmd, 
-                arrayOf("GNUPGHOME=${System.getProperty("user.home")}/.gnupg"))
-            importResult.waitFor()
-            
-            if (importResult.exitValue() == 0) {
-                logger.lifecycle("✓ GPG key imported successfully")
-                // Use GPG agent for signing
-                useGpgCmd()
-                sign(publishing.publications)
-                logger.lifecycle("✓ Signing configured successfully")
-            } else {
-                val error = importResult.errorStream.bufferedReader().readText()
-                logger.error("GPG import failed: $error")
-                
-                // Fallback to in-memory approach with base64 decoding
-                logger.lifecycle("  Attempting fallback: base64 decode approach...")
-                val decodedKey = try {
+                logger.lifecycle("  Key format: Base64 encoded, decoding...")
+                try {
                     String(Base64.getDecoder().decode(signingKeyRaw))
                 } catch (e: Exception) {
-                    signingKeyRaw // Use as-is if not base64
+                    logger.error("  Failed to decode base64, using as-is")
+                    signingKeyRaw
                 }
-                
-                useInMemoryPgpKeys(signingKeyId.trim(), decodedKey, signingPassword.trim())
-                sign(publishing.publications)
-                logger.lifecycle("✓ Signing configured with fallback method")
             }
+            
+            // Use in-memory keys - this works in CI without TTY
+            useInMemoryPgpKeys(signingKeyId.trim(), signingKey, signingPassword.trim())
+            sign(publishing.publications)
+            logger.lifecycle("✓ Signing configured successfully")
         } catch (e: Exception) {
             logger.error("Failed to configure signing: ${e.message}")
-            logger.error("  Attempting direct in-memory fallback...")
+            logger.lifecycle("  Trying without key ID (auto-detect)...")
             
-            // Last resort: try useInMemoryPgpKeys without key ID (auto-detect)
+            // Last resort: let Gradle auto-detect the key ID
             try {
-                useInMemoryPgpKeys(signingKeyRaw, signingPassword.trim())
+                val signingKey = if (signingKeyRaw.contains("BEGIN PGP")) {
+                    signingKeyRaw
+                } else {
+                    String(Base64.getDecoder().decode(signingKeyRaw))
+                }
+                useInMemoryPgpKeys(signingKey, signingPassword.trim())
                 sign(publishing.publications)
-                logger.lifecycle("✓ Signing configured with auto-detect method")
+                logger.lifecycle("✓ Signing configured with auto-detected key ID")
             } catch (e2: Exception) {
                 logger.error("All signing methods failed: ${e2.message}")
+                logger.error("Please ensure:")
+                logger.error("  1. SIGNING_KEY is either ASCII armored or base64 encoded")
+                logger.error("  2. SIGNING_KEY_ID matches the key (or remove it)")
+                logger.error("  3. SIGNING_PASSWORD is correct")
                 throw e2
             }
-        } finally {
-            keyFile.delete()
         }
     }
 }

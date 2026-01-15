@@ -103,12 +103,6 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew publish-to-central.sh
     
-    - name: Setup GPG
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gnupg
-        gpg --version
-    
     - name: Publish to Maven Central
       env:
         MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
