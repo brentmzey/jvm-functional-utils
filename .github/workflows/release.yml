@@ -60,7 +60,7 @@ jobs:
       run: ./publish-to-central.sh "release-${{ steps.get_version.outputs.VERSION }}"
     
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           lib/build/libs/*.jar
