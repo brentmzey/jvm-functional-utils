@@ -4,7 +4,7 @@ plugins {
     kotlin("multiplatform") version "2.1.0"
     id("maven-publish")
     id("signing")
-    id("org.jetbrains.kotlinx.kover") version "0.8.3"
+    id("org.jetbrains.kotlinx.kover") version "0.9.4"
     id("pmd")
     id("org.graalvm.buildtools.native") version "0.10.3"
 }
